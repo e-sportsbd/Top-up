@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>E-Sports BD – Login</title>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<!-- Google Font -->
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+<style>
+body{
+    margin:0;
+    background:#0a0a0a;
+    color:#fff;
+    font-family:'Poppins', sans-serif;
+}
+
+.wrapper{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+}
+
+.container{
+    width:90%;
+    max-width:380px;
+    background:#111;
+    padding:28px;
+    border-radius:14px;
+    box-shadow:0 0 25px rgba(255,0,85,0.35);
+    animation:fade 0.4s ease;
+}
+
+@keyframes fade{
+    from{opacity:0;transform:scale(0.95);}
+    to{opacity:1;transform:scale(1);}
+}
+
+h2{
+    text-align:center;
+    margin-bottom:20px;
+}
+
+input{
+    width:100%;
+    padding:13px;
+    margin:10px 0;
+    border:none;
+    border-radius:7px;
+    background:#1b1b1b;
+    color:white;
+    font-size:15px;
+    outline:none;
+}
+
+button{
+    width:100%;
+    padding:13px;
+    margin-top:8px;
+    background:#ff0055;
+    border:none;
+    border-radius:7px;
+    color:#fff;
+    font-size:17px;
+    font-weight:600;
+    cursor:pointer;
+    transition:0.3s;
+}
+
+button:hover{
+    background:#ff3377;
+    box-shadow:0 0 15px #ff0055;
+}
+
+.link{
+    color:#00eaff;
+    text-align:center;
+    margin-top:12px;
+    cursor:pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div class="wrapper">
+
+<!-- LOGIN PAGE -->
+<div id="loginPage" class="container">
+    <h2>Login</h2>
+
+    <input type="email" id="loginEmail" placeholder="Email Address">
+    <input type="password" id="loginPass" placeholder="Password">
+
+    <button onclick="loginUser()">Login</button>
+
+    <div class="link" onclick="openRegister()">Create New Account</div>
+</div>
+
+<!-- REGISTER PAGE -->
+<div id="registerPage" class="container" style="display:none;">
+    <h2>Create Account</h2>
+
+    <input type="text" id="regName" placeholder="Full Name">
+    <input type="email" id="regEmail" placeholder="Email Address">
+    <input type="text" id="regPhone" placeholder="Phone Number">
+    <input type="password" id="regPass" placeholder="Password">
+
+    <button onclick="registerUser()">Register</button>
+
+    <div class="link" onclick="openLogin()">Already have an account?</div>
+</div>
+
+</div>
+
+<script>
+// ---------- Firebase Config ----------
+const firebaseConfig = {
+  apiKey: "AIzaSyBl0PIm4lvZea96Bte3KaKQJvurGE1P8Es",
+  authDomain: "post-c7e41.firebaseapp.com",
+  databaseURL: "https://post-c7e41-default-rtdb.firebaseio.com/",
+  projectId: "post-c7e41",
+  messagingSenderId: "758133068153",
+  appId: "1:758133068153:web:5513a1de83491c81776084"
+};
+
+firebase.initializeApp(firebaseConfig);
+
+// ---------- Toggle ----------
+function openRegister(){
+    loginPage.style.display="none";
+    registerPage.style.display="block";
+}
+function openLogin(){
+    registerPage.style.display="none";
+    loginPage.style.display="block";
+}
+
+// ---------- Register (FULL FIXED) ----------
+function registerUser(){
+    let name = regName.value;
+    let email = regEmail.value;
+    let phone = regPhone.value;
+    let pass = regPass.value;
+
+    if(name=="" || email=="" || phone=="" || pass=="")
+        return alert("All fields required!");
+
+    firebase.auth().createUserWithEmailAndPassword(email, pass)
+    .then(res => {
+
+        let user = res.user;
+        let uid = user.uid;
+
+        // ✔ Set Firebase Auth Display Name
+        user.updateProfile({
+            displayName: name
+        });
+
+        // ✔ Save user data in Realtime Database
+        firebase.database().ref("users/"+uid).set({
+            name:name,
+            email:email,
+            phone:phone,
+            uid:uid
+        });
+
+        // ✔ Create Wallet (default)
+        firebase.database().ref("wallet/"+uid).set({
+            dollar:0,
+            pin:"------"
+        });
+
+        alert("Registration Successful!");
+        window.location.href="index.html";
+    })
+    .catch(err => alert(err.message));
+}
+
+// ---------- Login ----------
+function loginUser(){
+    let email = loginEmail.value;
+    let pass = loginPass.value;
+
+    firebase.auth().signInWithEmailAndPassword(email, pass)
+    .then(res=>{
+        let uid = res.user.uid;
+        localStorage.setItem("uid", uid);
+
+        alert("Login Successful!");
+        window.location.href="index.html";
+    })
+    .catch(err=>alert(err.message));
+}
+</script>
+
+</body>
+</html>
