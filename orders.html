@@ -139,17 +139,17 @@ body{
 
 <!-- HEADER -->
 <div class="header">
-    <div class="logo" onclick="go('index.html')">
-        <img src="logo.png">
+    <div class="logo" onclick="go('')">
+        <img src="https://i.ibb.co.com/fGt7pS45/Picsart-25-09-30-23-06-37-837.webp">
         TOPUPBD
     </div>
 
     <div class="balance-box">
         <img src="wallet.png" width="20">
-        <span id="walletBalance">0৳</span>
+        <span id="walletBalance">৳0</span>
     </div>
 
-    <img id="userPhoto" class="profile-img" src="default.png" onclick="go('profile.html')">
+    <img id="userPhoto" class="profile-img" src="profile.png" onclick="go('profile.html')">
 </div>
 
 <div class="section-title">📦 My Order History</div>
@@ -190,12 +190,16 @@ function go(p){ window.location.href = p; }
 /* LOAD USER */
 auth.onAuthStateChanged(user=>{
     if(!user){
-        alert("Login First!");
+        alert("Please Login First!");
         go("login.html");
         return;
     }
 
-    document.getElementById("userPhoto").src = user.photoURL || "default.png";
+    // FIXED: Firebase photoURL না থাকলে profile.png দেখাবে
+    const userPhoto = document.getElementById("userPhoto");
+    userPhoto.src = (user.photoURL && user.photoURL !== "") 
+                    ? user.photoURL 
+                    : "profile.png";
 
     // Load wallet
     db.ref("wallet/" + user.uid).on("value", snap=>{

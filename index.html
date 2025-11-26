@@ -91,6 +91,8 @@
         border-radius:20px;
         margin:18px auto;
         display:block;
+        height:250px;
+        width:100%;
     }
 
     h2{
@@ -172,29 +174,25 @@
 <!-- HEADER -->
 <div class="header">
     <div class="logo" onclick="openHome()">
-        <img src="logo.png">
+        <img src="https://img.icons8.com/dotty/480/FFFFFF/refresh.png">
         <span>TOPUPBD</span>
     </div>
 
     <div style="display:flex; align-items:center; gap:10px;">
-        <div id="walletBox" class="wallet">৳ <span id="walletAmount">0</span></div>
-
+        <div id="walletBox" class="wallet"><img src="wallet.png" width="20">৳ <span id="walletAmount">0</span></div>
         <div id="loginBtn" class="login-btn" onclick="openLogin()">Login</div>
-
         <div class="profile">
-            <img id="profileImage" src="user.jpg" onclick="openProfile()">
+            <img id="profileImage" src="https://img.icons8.com/?size=100&id=O9K5DaypaVKw&format=png&color=000000" onclick="openProfile()">
         </div>
     </div>
 </div>
 
 <!-- NOTICE -->
-<div class="notice">
-    TopupBD ২৪ ঘণ্টাই টপআপ চালু থাকে। সব টপআপ Auto Delivery।
-</div>
+<div class="notice" id="noticeText">Loading...</div>
 
 <!-- BANNER -->
 <div class="banner">
-    <img src="banner.jpg">
+    <img id="bannerImage" src="" alt="Banner">
 </div>
 
 <h2>FREE FIRE</h2>
@@ -202,22 +200,30 @@
 <!-- PRODUCT LIST -->
 <div class="products">
     <div class="card" onclick="location.href='topup.html'">
-        <img src="ff1.jpg">
+        <img src="https://i.ibb.co.com/hJYFtSQq/1743654647.webp">
         <p>Free Fire Topup [BD]</p>
     </div>
 
     <div class="card" onclick="location.href='weekly.html'">
-        <img src="ff2.jpg">
+        <img src="https://i.ibb.co.com/v47pJ641/1727710497.webp">
         <p>Weekly / Monthly</p>
     </div>
 
     <div class="card" onclick="location.href='levelup.html'">
-        <img src="ff3.jpg">
+        <img src="https://i.ibb.co.com/hFbyBLcC/download-24.webp">
         <p>Level Up Pass</p>
     </div>
 
+    <div class="card" onclick="location.href='evo.html'">
+        <img src="https://i.ibb.co.com/p6MMTvyp/1727550206.webp">
+        <p>Evo Access</p>
+    </div>
+    <div class="card" onclick="location.href='lite.html'">
+        <img src="https://i.ibb.co.com/WNZ4vN29/download-23.webp">
+        <p>Weekly Lite</p>
+    </div>
     <div class="card" onclick="location.href='unipin.html'">
-        <img src="ff4.jpg">
+        <img src="https://i.ibb.co.com/FLPnFXtw/unipin-voucher-500x500.webp">
         <p>Unipin Voucher</p>
     </div>
 </div>
@@ -225,9 +231,9 @@
 <!-- FOLLOW -->
 <div class="follow">
     <h2>Follow Us</h2>
-    <div>WhatsApp Helpline</div>
-    <div>Telegram Join</div>
-    <div>YouTube Channel</div>
+    <div id="wpBtn">WhatsApp Helpline</div>
+    <div id="tgBtn">Telegram Join</div>
+    <div id="ytBtn">YouTube Channel</div>
 </div>
 
 <!-- BOTTOM MENU -->
@@ -256,7 +262,7 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 
-// Navigation
+// NAVIGATION
 function openHome(){ location.href = "index.html"; }
 function openAddMoney(){ location.href = "add_money.html"; }
 function openOrders(){ location.href = "orders.html"; }
@@ -264,7 +270,36 @@ function openCodes(){ location.href = "codes.html"; }
 function openProfile(){ location.href = "profile.html"; }
 function openLogin(){ location.href = "login.html"; }
 
-// Auth Check
+// LOAD HOME SETTINGS (Notice + Banner)
+firebase.database().ref("home").on("value", snap => {
+
+    const data = snap.val() || {};
+
+    // Notice
+    document.getElementById("noticeText").innerText =
+        data.notice || "Welcome to TOPUPBD!";
+
+    // Banner
+    document.getElementById("bannerImage").src =
+        data.banner || "default_banner.jpg";
+
+    // FOLLOW LINKS
+    if(data.follow){
+        document.getElementById("wpBtn").onclick = () => {
+            window.location.href = data.follow.whatsapp;
+        };
+
+        document.getElementById("tgBtn").onclick = () => {
+            window.location.href = data.follow.telegram;
+        };
+
+        document.getElementById("ytBtn").onclick = () => {
+            window.location.href = data.follow.youtube;
+        };
+    }
+});
+
+// AUTH CHECK
 firebase.auth().onAuthStateChanged(function(user){
 
     const walletBox = document.getElementById("walletBox");
@@ -279,12 +314,10 @@ firebase.auth().onAuthStateChanged(function(user){
 
     if(user){
 
-        // SHOW HEADER ITEMS
         walletBox.style.display = "flex";
         profileImage.style.display = "block";
         loginBtn.style.display = "none";
 
-        // SHOW MENU ITEMS
         mHome.style.display = "block";
         mAdd.style.display = "block";
         mOrder.style.display = "block";
@@ -301,12 +334,10 @@ firebase.auth().onAuthStateChanged(function(user){
 
     } else {
 
-        // HIDE HEADER ITEMS
         walletBox.style.display = "none";
         profileImage.style.display = "none";
         loginBtn.style.display = "inline-block";
 
-        // HIDE ALL MENU ITEMS (Home সহ)
         mHome.style.display = "none";
         mAdd.style.display = "none";
         mOrder.style.display = "none";
