@@ -27,16 +27,10 @@ body{
     backdrop-filter:blur(12px);
     box-shadow:0 4px 18px rgba(0,0,0,0.25);
 }
-.logo{
-    display:flex;
-    align-items:center;
-    gap:10px;
-    font-size:22px;
-    font-weight:700;
-}
+.logo{ display:flex; align-items:center; gap:10px; font-size:22px; font-weight:700; }
 .logo img{ height:42px; }
 
-/* BALANCE BOX */
+/* BALANCE */
 .balance-box{
     background:rgba(255,255,255,0.85);
     padding:7px 16px;
@@ -49,7 +43,7 @@ body{
     box-shadow:0 2px 10px rgba(0,0,0,0.25);
 }
 
-/* LOGIN BUTTON */
+/* LOGIN */
 .login-btn{
     background:white;
     padding:7px 16px;
@@ -152,7 +146,7 @@ body{
     box-shadow:0 4px 15px rgba(0,0,0,0.25);
 }
 
-/* HELP FLOAT */
+/* HELP */
 .call-btn{
     position:fixed;
     right:15px;
@@ -170,7 +164,7 @@ body{
     box-shadow:0 4px 15px rgba(0,0,0,0.25);
 }
 
-/* BOTTOM NAV */
+/* NAV */
 .bottom-nav{
     position:fixed;
     bottom:0;
@@ -191,7 +185,7 @@ body{
     color:#1d2d50;
 }
 
-/* LOGIN না থাকলে সব hide */
+/* LOGIN না থাকলে hide */
 #navHome, #navAddMoney, #navOrders, #navCodes, #navProfile {
     display:none;
 }
@@ -202,7 +196,10 @@ body{
 
 <!-- HEADER -->
 <div class="header">
-    <div class="logo"><img src="https://i.ibb.co.com/fGt7pS45/Picsart-25-09-30-23-06-37-837.webp"> TOPUP BD</div>
+    <div class="logo">
+        <img src="https://i.ibb.co.com/fGt7pS45/Picsart-25-09-30-23-06-37-837.webp">
+        EASY TOPUP
+    </div>
 
     <div id="balanceBox" class="balance-box" style="display:none;">
         <img src="wallet.png" width="22">
@@ -220,7 +217,7 @@ body{
     <div id="packageList" class="pack-grid"></div>
 </div>
 
-<!-- UID INPUT -->
+<!-- UID -->
 <div class="section">
     <div class="section-title">২) Account Info</div>
     <input id="playerId" type="number" class="input-box" placeholder="আপনার Free Fire UID লিখুন">
@@ -241,13 +238,8 @@ body{
 <div class="call-btn" onclick="go('support.html')">Help</div>
 
 <!-- NAV -->
-<div class="bottom-nav">
-    <div id="navHome" onclick="go('index.html')">🏠<br>Home</div>
-    <div id="navAddMoney" onclick="go('addmoney.html')">➕<br>Add Money</div>
-    <div id="navOrders" onclick="go('orders.html')">📦<br>My Orders</div>
-    <div id="navCodes" onclick="go('lottery.html')">🔑<br>Lottary</div>
-    <div id="navProfile" onclick="go('profile.html')">👤<br>Account</div>
-</div>
+
+
 
 <!-- FIREBASE -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -255,6 +247,9 @@ body{
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <script>
+
+function go(p){ location.href = p; }
+
 const firebaseConfig = {
   apiKey: "AIzaSyBl0PIm4lvZea96Bte3KaKQJvurGE1P8Es",
   authDomain: "post-c7e41.firebaseapp.com",
@@ -268,18 +263,14 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 
-function go(p){ location.href = p; }
-
-/* LOGIN CONTROL */
+/* LOGIN */
 auth.onAuthStateChanged(user=>{
     if(user){
         loginButton.style.display="none";
         balanceBox.style.display="flex";
         userPhoto.style.display="block";
-
         userPhoto.src = user.photoURL || "profile.png";
 
-        // NAV SHOW
         navHome.style.display="block";
         navAddMoney.style.display="block";
         navOrders.style.display="block";
@@ -291,13 +282,6 @@ auth.onAuthStateChanged(user=>{
         loginButton.style.display="block";
         balanceBox.style.display="none";
         userPhoto.style.display="none";
-
-        // NAV HIDE
-        navHome.style.display="none";
-        navAddMoney.style.display="none";
-        navOrders.style.display="none";
-        navCodes.style.display="none";
-        navProfile.style.display="none";
     }
 });
 
@@ -311,16 +295,26 @@ function loadWallet(uid){
     });
 }
 
-/* LOAD PACKAGES */
-db.ref("packages").on("value", snap=>{
+/* LOAD TOPUP PACKAGES */
+const category = "topup";  
+
+db.ref("products/" + category).on("value", snap=>{
     const box = document.getElementById("packageList");
     box.innerHTML = "";
+
     snap.forEach(p=>{
         let pkg = p.val();
+
         let div = document.createElement("div");
         div.className = "pack";
         div.dataset.key = p.key;
-        div.innerHTML = `${pkg.diamonds} 💎<br><span style='color:#1e90ff;font-size:17px;'>${pkg.price}৳</span>`;
+
+        // Title removed — Only Diamond + Price
+        div.innerHTML = `
+            ${pkg.diamonds} 💎<br>
+            <span style='color:#1e90ff;font-size:17px;'>${pkg.price}৳</span>
+        `;
+
         div.addEventListener("click", ()=>selectPackage(div,p.key,pkg));
         box.appendChild(div);
     });
@@ -329,29 +323,32 @@ db.ref("packages").on("value", snap=>{
 /* SELECT PACKAGE */
 let selectedDiv = null;
 let selectedPackage = null;
+
 function selectPackage(div,key,data){
     if(selectedDiv) selectedDiv.classList.remove("active");
     div.classList.add("active");
     selectedDiv = div;
+
     selectedPackage = { key, ...data };
 }
 
-/* SELECT PAYMENT */
+/* PAYMENT */
 let payMethod = null;
+
 function selectMethod(type){
     payMethod = type;
     document.querySelectorAll(".paybox").forEach(x=>x.classList.remove("active"));
-    document.getElementById(type==="wallet"?"walletBox":"autoBox").classList.add("active");
+    document.getElementById(type==="wallet" ? "walletBox" : "autoBox").classList.add("active");
 }
 
-/* BUY NOW */
+/* BUY */
 function buyNow(){
     let user = auth.currentUser;
     if(!user) return alert("Login First!");
 
     if(!selectedPackage) return alert("Package Select করুন");
 
-    let id = playerId.value;
+    let id = String(playerId.value).trim();
     if(id.length < 3) return alert("সঠিক UID লিখুন");
 
     if(!payMethod) return alert("Pay method Select করুন");
@@ -360,7 +357,9 @@ function buyNow(){
 
     if(payMethod==="wallet"){
         if(currentWallet < price) return alert("Wallet এ পর্যাপ্ত টাকা নেই!");
-        db.ref("wallet/"+user.uid).update({ dollar: currentWallet - price });
+        db.ref("wallet/"+user.uid).update({
+            dollar: currentWallet - price
+        });
     }
 
     let order = {
@@ -373,11 +372,13 @@ function buyNow(){
         status:"Pending",
         time:Date.now()
     };
+
     db.ref("orders").push(order);
 
     alert("Order Submitted!");
     go("index.html");
 }
+
 </script>
 
 </body>

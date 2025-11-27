@@ -10,79 +10,101 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-<!-- Google Font -->
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
 
 <style>
 body{
     margin:0;
-    background:#0a0a0a;
-    color:#fff;
+    background:linear-gradient(145deg,#e8f0ff,#fff1f1,#ffe7db);
     font-family:'Poppins', sans-serif;
+    min-height:100vh;
 }
 
+/* TOP HEADER */
+.header{
+    padding:15px;
+    background:rgba(30,144,255,0.85);
+    color:white;
+    font-size:20px;
+    font-weight:700;
+    text-align:center;
+    backdrop-filter:blur(7px);
+    box-shadow:0 4px 20px rgba(0,0,0,0.25);
+}
+
+/* Center Wrapper */
 .wrapper{
     display:flex;
     justify-content:center;
     align-items:center;
-    height:100vh;
+    min-height:85vh;
+    padding:20px;
 }
 
+/* Login Box */
 .container{
-    width:90%;
+    width:100%;
     max-width:380px;
-    background:#111;
-    padding:28px;
-    border-radius:14px;
-    box-shadow:0 0 25px rgba(255,0,85,0.35);
+    background:white;
+    padding:25px;
+    border-radius:20px;
+    box-shadow:0 4px 22px rgba(0,0,0,0.18);
     animation:fade 0.4s ease;
 }
 
 @keyframes fade{
-    from{opacity:0;transform:scale(0.95);}
-    to{opacity:1;transform:scale(1);}
+    from{opacity:0;transform:translateY(10px);}
+    to{opacity:1;transform:translateY(0);}
 }
 
 h2{
     text-align:center;
     margin-bottom:20px;
+    color:#1e90ff;
+    font-weight:700;
 }
 
 input{
     width:100%;
-    padding:13px;
+    padding:12px;
     margin:10px 0;
     border:none;
-    border-radius:7px;
-    background:#1b1b1b;
-    color:white;
+    border-radius:12px;
+    background:#f1f4ff;
     font-size:15px;
     outline:none;
+    border:2px solid transparent;
+    transition:0.3s;
+}
+
+input:focus{
+    border-color:#1e90ff;
 }
 
 button{
     width:100%;
     padding:13px;
-    margin-top:8px;
-    background:#ff0055;
+    background:#1e90ff;
     border:none;
-    border-radius:7px;
-    color:#fff;
+    border-radius:14px;
+    color:white;
     font-size:17px;
-    font-weight:600;
+    font-weight:700;
     cursor:pointer;
     transition:0.3s;
+    margin-top:5px;
 }
 
 button:hover{
-    background:#ff3377;
-    box-shadow:0 0 15px #ff0055;
+    background:#3ea5ff;
+    box-shadow:0 4px 12px rgba(0,0,50,0.25);
 }
 
 .link{
-    color:#00eaff;
     text-align:center;
     margin-top:12px;
+    color:#1e90ff;
+    font-weight:600;
     cursor:pointer;
 }
 </style>
@@ -90,11 +112,14 @@ button:hover{
 
 <body>
 
+<!-- HEADER -->
+<div class="header">TOPUP BD – Login</div>
+
 <div class="wrapper">
 
 <!-- LOGIN PAGE -->
 <div id="loginPage" class="container">
-    <h2>Login</h2>
+    <h2>Login Account</h2>
 
     <input type="email" id="loginEmail" placeholder="Email Address">
     <input type="password" id="loginPass" placeholder="Password">
@@ -121,29 +146,31 @@ button:hover{
 </div>
 
 <script>
-// ---------- Firebase Config ----------
+// Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyBl0PIm4lvZea96Bte3KaKQJvurGE1P8Es",
   authDomain: "post-c7e41.firebaseapp.com",
   databaseURL: "https://post-c7e41-default-rtdb.firebaseio.com/",
   projectId: "post-c7e41",
+  storageBucket: "post-c7e41.appspot.com",
   messagingSenderId: "758133068153",
   appId: "1:758133068153:web:5513a1de83491c81776084"
 };
 
 firebase.initializeApp(firebaseConfig);
 
-// ---------- Toggle ----------
+// PAGE TOGGLE
 function openRegister(){
     loginPage.style.display="none";
     registerPage.style.display="block";
 }
+
 function openLogin(){
     registerPage.style.display="none";
     loginPage.style.display="block";
 }
 
-// ---------- Register (FULL FIXED) ----------
+// REGISTER USER
 function registerUser(){
     let name = regName.value;
     let email = regEmail.value;
@@ -155,47 +182,42 @@ function registerUser(){
 
     firebase.auth().createUserWithEmailAndPassword(email, pass)
     .then(res => {
+        let uid = res.user.uid;
 
-        let user = res.user;
-        let uid = user.uid;
+        res.user.updateProfile({ displayName: name });
 
-        // ✔ Set Firebase Auth Display Name
-        user.updateProfile({
-            displayName: name
-        });
-
-        // ✔ Save user data in Realtime Database
         firebase.database().ref("users/"+uid).set({
             name:name,
             email:email,
             phone:phone,
-            uid:uid
+            uid:uid,
+            balance:0
         });
 
-        // ✔ Create Wallet (default)
         firebase.database().ref("wallet/"+uid).set({
             dollar:0,
             pin:"------"
         });
 
         alert("Registration Successful!");
-        window.location.href="index.html";
+        location.href="index.html";
     })
     .catch(err => alert(err.message));
 }
 
-// ---------- Login ----------
+// LOGIN USER
 function loginUser(){
     let email = loginEmail.value;
     let pass = loginPass.value;
 
+    if(email=="" || pass=="")
+        return alert("Enter email & password!");
+
     firebase.auth().signInWithEmailAndPassword(email, pass)
     .then(res=>{
-        let uid = res.user.uid;
-        localStorage.setItem("uid", uid);
-
+        localStorage.setItem("uid", res.user.uid);
         alert("Login Successful!");
-        window.location.href="index.html";
+        location.href="index.html";
     })
     .catch(err=>alert(err.message));
 }
