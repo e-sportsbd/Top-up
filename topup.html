@@ -163,32 +163,6 @@ body{
     font-size:16px;
     box-shadow:0 4px 15px rgba(0,0,0,0.25);
 }
-
-/* NAV */
-.bottom-nav{
-    position:fixed;
-    bottom:0;
-    left:0;
-    width:100%;
-    background:rgba(255,255,255,0.95);
-    display:flex;
-    justify-content:space-around;
-    padding:10px 0 15px;
-    font-weight:700;
-    backdrop-filter:blur(12px);
-    box-shadow:0 -4px 15px rgba(0,0,0,0.2);
-}
-.bottom-nav div{
-    text-align:center;
-    font-size:13px;
-    cursor:pointer;
-    color:#1d2d50;
-}
-
-/* LOGIN না থাকলে hide */
-#navHome, #navAddMoney, #navOrders, #navCodes, #navProfile {
-    display:none;
-}
 </style>
 </head>
 
@@ -237,9 +211,6 @@ body{
 
 <div class="call-btn" onclick="go('support.html')">Help</div>
 
-<!-- NAV -->
-
-
 
 <!-- FIREBASE -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -270,12 +241,6 @@ auth.onAuthStateChanged(user=>{
         balanceBox.style.display="flex";
         userPhoto.style.display="block";
         userPhoto.src = user.photoURL || "profile.png";
-
-        navHome.style.display="block";
-        navAddMoney.style.display="block";
-        navOrders.style.display="block";
-        navCodes.style.display="block";
-        navProfile.style.display="block";
 
         loadWallet(user.uid);
     } else {
@@ -309,7 +274,6 @@ db.ref("products/" + category).on("value", snap=>{
         div.className = "pack";
         div.dataset.key = p.key;
 
-        // Title removed — Only Diamond + Price
         div.innerHTML = `
             ${pkg.diamonds} 💎<br>
             <span style='color:#1e90ff;font-size:17px;'>${pkg.price}৳</span>
