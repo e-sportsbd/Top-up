@@ -202,7 +202,7 @@ body{
 
 <!-- HEADER -->
 <div class="header">
-    <div class="logo"><img src="logo.png"> TOPUPBD</div>
+    <div class="logo"><img src="https://i.ibb.co.com/fGt7pS45/Picsart-25-09-30-23-06-37-837.webp"> TOPUP BD</div>
 
     <div id="balanceBox" class="balance-box" style="display:none;">
         <img src="wallet.png" width="22">
@@ -211,7 +211,7 @@ body{
 
     <div id="loginButton" class="login-btn" onclick="go('login.html')">Login</div>
 
-    <img id="userPhoto" class="profile-img" src="default.png" style="display:none;">
+    <img id="userPhoto" class="profile-img" src="profile.png" style="display:none;">
 </div>
 
 <!-- SELECT PACKAGE -->
@@ -238,14 +238,14 @@ body{
     <button onclick="buyNow()" class="buy-btn">Buy Now</button>
 </div>
 
-<div class="call-btn">Help</div>
+<div class="call-btn" onclick="go('support.html')">Help</div>
 
 <!-- NAV -->
 <div class="bottom-nav">
     <div id="navHome" onclick="go('index.html')">🏠<br>Home</div>
     <div id="navAddMoney" onclick="go('addmoney.html')">➕<br>Add Money</div>
     <div id="navOrders" onclick="go('orders.html')">📦<br>My Orders</div>
-    <div id="navCodes" onclick="go('codes.html')">🔑<br>My Codes</div>
+    <div id="navCodes" onclick="go('lottery.html')">🔑<br>Lottary</div>
     <div id="navProfile" onclick="go('profile.html')">👤<br>Account</div>
 </div>
 
@@ -277,7 +277,7 @@ auth.onAuthStateChanged(user=>{
         balanceBox.style.display="flex";
         userPhoto.style.display="block";
 
-        userPhoto.src = user.photoURL || "default.png";
+        userPhoto.src = user.photoURL || "profile.png";
 
         // NAV SHOW
         navHome.style.display="block";

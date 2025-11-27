@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Support – E-Sports BD</title>
+
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+        font-family: "Poppins", sans-serif;
+        background: #f7f7f7;
+        color: #222;
+    }
+
+    .container {
+        width: 92%;
+        max-width: 900px;
+        margin: auto;
+        padding-top: 40px;
+    }
+
+    h2 {
+        text-align: center;
+        margin-bottom: 25px;
+        font-weight: 600;
+        font-size: 26px;
+    }
+
+    .follow-box {
+        background: #fff;
+        padding: 20px;
+        border-radius: 14px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        margin-bottom: 35px;
+    }
+
+    .follow-box .item {
+        padding: 14px;
+        border-radius: 10px;
+        background: #f1f5f9;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+
+    .follow-box .item:hover {
+        background: #e2e8f0;
+    }
+
+    .icon {
+        font-size: 24px;
+    }
+
+    .contact-box {
+        text-align: center;
+        margin-bottom: 50px;
+    }
+
+    .contact-box p {
+        font-size: 15px;
+        margin: 5px 0;
+    }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+    <h2>Follow Us</h2>
+
+    <div class="follow-box">
+
+        <div class="item" id="telegramBox">
+            <div class="icon">📨</div>
+            <div>টেলিগ্রাম হেল্পলাইনে যোগাযোগ করুন।</div>
+        </div>
+
+        <div class="item" id="youtubeBox">
+            <div class="icon">▶️</div>
+            <div>আমাদের অফিসিয়াল ইউটিউব চ্যানেল সাবস্ক্রাইব করুন।</div>
+        </div>
+
+        <div class="item" id="facebookBox">
+            <div class="icon">📘</div>
+            <div>আপডেট পেতে আমাদের ফেসবুক পেজ ফলো করুন।</div>
+        </div>
+
+    </div>
+
+    <h2>Contact Us</h2>
+
+    <div class="contact-box">
+        <p><b>Email:</b> <span id="emailText"></span></p>
+        <p><b>Phone:</b> <span id="phoneText"></span></p>
+        <p><b>Telegram:</b> <span id="contactTelegram"></span></p>
+    </div>
+
+</div>
+
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<script>
+
+const firebaseConfig = {
+    apiKey: "AIzaSyBl0PIm4lvZea96Bte3KaKQJvurGE1P8Es",
+            authDomain: "noreply@post-c7e41.firebaseapp.com",
+            databaseURL: "https://post-c7e41-default-rtdb.firebaseio.com",
+            projectId: "post-c7e41",
+            messagingSenderId: "758133068153",
+            appId: "1:758133068153:web:28ef27e45d8037e0d49fa8"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+db.ref("support_page").on("value", snapshot => {
+    if (!snapshot.exists()) return;
+
+    const data = snapshot.val();
+
+    // Follow Section
+    document.getElementById("telegramBox").onclick = () => window.open(data.telegram_link, "_blank");
+    document.getElementById("youtubeBox").onclick = () => window.open(data.youtube_link, "_blank");
+    document.getElementById("facebookBox").onclick = () => window.open(data.facebook_link, "_blank");
+
+    // Contact Section
+    document.getElementById("emailText").innerText = data.contact_email;
+    document.getElementById("phoneText").innerText = data.contact_phone;
+    document.getElementById("contactTelegram").innerText = data.contact_telegram;
+    document.getElementById("contactTelegram").onclick = () => window.open(data.contact_telegram, "_blank");
+
+});
+</script>
+
+</body>
+</html>

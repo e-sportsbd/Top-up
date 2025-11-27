@@ -136,6 +136,22 @@
         margin:18px;
         margin-bottom:100px;
     }
+    .call-btn{
+    position:fixed;
+    right:15px;
+    bottom:110px;
+    width:70px;
+    height:70px;
+    background:#ff4b4b;
+    border-radius:50%;
+    color:white;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:700;
+    font-size:16px;
+    box-shadow:0 4px 15px rgba(0,0,0,0.25);
+}
 
     .follow div{
         background:#f2f5ff;
@@ -174,8 +190,8 @@
 <!-- HEADER -->
 <div class="header">
     <div class="logo" onclick="openHome()">
-        <img src="https://img.icons8.com/dotty/480/FFFFFF/refresh.png">
-        <span>TOPUPBD</span>
+        <img src="https://i.ibb.co.com/fGt7pS45/Picsart-25-09-30-23-06-37-837.webp">
+        <span>TOPUP BD</span>
     </div>
 
     <div style="display:flex; align-items:center; gap:10px;">
@@ -192,7 +208,7 @@
 
 <!-- BANNER -->
 <div class="banner">
-    <img id="bannerImage" src="" alt="Banner">
+    <img id="bannerImage" src="default_banner.jpg" alt="Banner">
 </div>
 
 <h2>FREE FIRE</h2>
@@ -235,13 +251,13 @@
     <div id="tgBtn">Telegram Join</div>
     <div id="ytBtn">YouTube Channel</div>
 </div>
-
+<div class="call-btn" onclick=""openHelp()">Help</div>
 <!-- BOTTOM MENU -->
 <div class="bottom-menu">
     <div id="mHome" onclick="openHome()">🏠 <br> Home</div>
     <div id="mAdd" onclick="openAddMoney()">➕ <br> Add Money</div>
     <div id="mOrder" onclick="openOrders()">📦 <br> My Orders</div>
-    <div id="mCodes" onclick="openCodes()">🔑 <br> My Codes</div>
+    <div id="mCodes" onclick="openCodes()">🔑 <br>Lottary</div>
     <div id="mAcc" onclick="openProfile()">👤 <br> Account</div>
 </div>
 
@@ -263,10 +279,11 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 
 // NAVIGATION
+function openHelp(){ location.href = "support.html"; }
 function openHome(){ location.href = "index.html"; }
 function openAddMoney(){ location.href = "add_money.html"; }
 function openOrders(){ location.href = "orders.html"; }
-function openCodes(){ location.href = "codes.html"; }
+function openCodes(){ location.href = "lottery.html"; }
 function openProfile(){ location.href = "profile.html"; }
 function openLogin(){ location.href = "login.html"; }
 
@@ -277,7 +294,7 @@ firebase.database().ref("home").on("value", snap => {
 
     // Notice
     document.getElementById("noticeText").innerText =
-        data.notice || "Welcome to TOPUPBD!";
+        data.notice || "Welcome to TOPUP BD!";
 
     // Banner
     document.getElementById("bannerImage").src =
