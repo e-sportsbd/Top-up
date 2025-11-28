@@ -16,6 +16,23 @@ body{
     padding-bottom:160px;
 }
 
+/* ================= GLOBAL LOADING POPUP ================= */
+#loadingOverlay{
+    position:fixed;
+    top:0; left:0;
+    width:100%; height:100%;
+    background:rgba(255,255,255,0.6);
+    backdrop-filter:blur(6px);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:22px;
+    font-weight:700;
+    color:#1e90ff;
+    z-index:999999;
+}
+
+/* ======================================================== */
 /* HEADER */
 .header{
     padding:12px 18px;
@@ -190,15 +207,68 @@ body{
     font-size:13px;
     cursor:pointer;
 }
+
+/* ALERT */
+.alert-overlay{
+    position:fixed;
+    top:0; left:0;
+    width:100%; height:100%;
+    background:rgba(0,0,0,0.45);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:999;
+    display:none;
+}
+.alert-box{
+    background:white;
+    width:80%;
+    max-width:300px;
+    padding:22px;
+    border-radius:16px;
+    text-align:center;
+    box-shadow:0 4px 15px rgba(0,0,0,0.25);
+}
+.alert-btn{
+    background:#1e90ff;
+    color:white;
+    padding:10px 18px;
+    border-radius:10px;
+    font-weight:600;
+    margin-top:12px;
+    display:inline-block;
+    cursor:pointer;
+}
 </style>
 </head>
 
 <body>
 
+<!-- GLOBAL LOADING -->
+<div id="loadingOverlay">⏳ Please Wait… Loading...</div>
+
+<!-- ALERT POPUP -->
+<div id="alertOverlay" class="alert-overlay">
+    <div class="alert-box">
+        <div id="alertMessage" style="font-size:17px;font-weight:600;color:#082857;"></div>
+        <div onclick="closeAlert()" class="alert-btn">OK</div>
+    </div>
+</div>
+
+<script>
+function showAlert(msg){
+    document.getElementById("alertMessage").innerText = msg;
+    document.getElementById("alertOverlay").style.display = "flex";
+}
+function closeAlert(){
+    document.getElementById("alertOverlay").style.display = "none";
+}
+</script>
+
 <!-- HEADER -->
 <div class="header">
     <div class="logo">
-        <img src="https://i.ibb.co.com/fGt7pS45/Picsart-25-09-30-23-06-37-837.webp">
+        <img src="logo.png">
         EASY TOPUP
     </div>
 
@@ -259,6 +329,15 @@ const db = firebase.database();
 
 function go(p){ location.href = p; }
 
+/* ===================== AUTO LOADING CONTROL ===================== */
+let load1=false, load2=false;
+
+function hideLoading(){
+    if(load1 && load2){
+        document.getElementById("loadingOverlay").style.display="none";
+    }
+}
+
 /* LOGIN */
 auth.onAuthStateChanged(user=>{
     if(user){
@@ -267,20 +346,26 @@ auth.onAuthStateChanged(user=>{
         userPhoto.style.display="block";
         userPhoto.src = user.photoURL || "profile.png";
         loadWallet(user.uid);
+    } else {
+        load1 = true;
+        hideLoading();
     }
 });
 
-/* LOAD WALLET */
+/* WALLET */
 let currentWallet = 0;
 function loadWallet(uid){
     db.ref("wallet/"+uid).on("value",snap=>{
         let d = snap.val() || {};
         currentWallet = d.dollar || 0;
         walletBalance.innerText = currentWallet + "৳";
+
+        load1 = true;
+        hideLoading();
     });
 }
 
-/* LOAD LEVEL UP PACKAGES */
+/* PACKAGES */
 db.ref("products/levelup").on("value", snap=>{
     const box = document.getElementById("packageList");
     box.innerHTML = "";
@@ -301,6 +386,9 @@ db.ref("products/levelup").on("value", snap=>{
         div.addEventListener("click", ()=>selectPackage(div,p.key,pkg));
         box.appendChild(div);
     });
+
+    load2 = true;
+    hideLoading();
 });
 
 /* SELECT PACKAGE */
@@ -311,7 +399,6 @@ function selectPackage(div,key,pkg){
     if(selectedDiv) selectedDiv.classList.remove("active");
     div.classList.add("active");
     selectedDiv = div;
-
     selectedPackage = { key, ...pkg };
 }
 
@@ -323,37 +410,56 @@ function selectMethod(type){
     document.getElementById(type==="wallet"?"walletBox":"autoBox").classList.add("active");
 }
 
-/* BUY NOW */
+/* ========================= BUY NOW ========================= */
 function buyNow(){
     let user = auth.currentUser;
-    if(!user) return alert("Login First!");
-    if(!selectedPackage) return alert("Package Select করুন");
+
+    if(!user) return showAlert("Login First!");
+    if(!selectedPackage) return showAlert("Package Select করুন");
 
     let id = playerId.value;
-    if(id.length < 3) return alert("UID ঠিকভাবে লিখুন");
+    if(id.length < 3) return showAlert("UID ঠিকভাবে লিখুন");
 
-    if(!payMethod) return alert("Payment Select করুন");
+    if(!payMethod) return showAlert("Payment Select করুন");
 
     let price = selectedPackage.price;
 
-    if(payMethod==="wallet"){
-        if(currentWallet < price) return alert("Wallet এ টাকা নেই!");
-        db.ref("wallet/"+user.uid).update({ dollar: currentWallet - price });
-    }
+    /* SHOW PROCESSING */
+    let load = document.getElementById("loadingOverlay");
+    load.innerText = "⏳ Processing...";
+    load.style.display = "flex";
 
-    let order = {
-        uid:user.uid,
-        playerId:id,
-        package:selectedPackage,
-        price:price,
-        payMethod:payMethod,
-        status:"Pending",
-        time:Date.now()
-    };
+    setTimeout(()=>{
 
-    db.ref("orders").push(order);
+        if(payMethod==="wallet"){
+            if(currentWallet < price){
+                load.style.display="none";
+                return showAlert("Wallet এ টাকা নেই!");
+            }
+            db.ref("wallet/"+user.uid).update({ dollar: currentWallet - price });
+        }
 
-    alert("Order Submitted!");
+        let order = {
+            uid:user.uid,
+            playerId:id,
+            package:selectedPackage,
+            price:price,
+            payMethod:payMethod,
+            status:"Pending",
+            time:Date.now()
+        };
+
+        db.ref("orders").push(order);
+
+        // Step 1: Change text
+        load.innerText = "✅ Order Submitted!";
+
+        // Step 2: 1.5 sec after refresh
+        setTimeout(()=>{
+            location.reload();
+        },1500);
+
+    },3000);
 }
 </script>
 

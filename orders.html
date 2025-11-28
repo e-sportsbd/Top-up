@@ -15,6 +15,22 @@ body{
     min-height:100vh;
 }
 
+/* 🔥 LOADING OVERLAY */
+#loadingOverlay{
+    position:fixed;
+    top:0;left:0;
+    width:100%;height:100%;
+    backdrop-filter:blur(8px);
+    background:rgba(255,255,255,0.6);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    z-index:9999;
+    font-size:22px;
+    font-weight:700;
+    color:#1e90ff;
+}
+
 /* HEADER */
 .header{
     padding:14px 16px;
@@ -69,22 +85,6 @@ body{
     font-weight:700;
     margin:20px 16px 10px;
     color:#2d2d2d;
-}
-.call-btn{
-    position:fixed;
-    right:15px;
-    bottom:110px;
-    width:70px;
-    height:70px;
-    background:#ff4b4b;
-    border-radius:50%;
-    color:white;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-weight:700;
-    font-size:16px;
-    box-shadow:0 4px 15px rgba(0,0,0,0.25);
 }
 
 /* ORDER CARD */
@@ -153,10 +153,13 @@ body{
 </head>
 <body>
 
+<!-- 🔥 LOADING POPUP -->
+<div id="loadingOverlay">⏳ Please wait... Loading...</div>
+
 <!-- HEADER -->
 <div class="header">
-    <div class="logo" onclick="go('')">
-        <img src="https://i.ibb.co.com/fGt7pS45/Picsart-25-09-30-23-06-37-837.webp">
+    <div class="logo" onclick="go('index.html')">
+        <img src="logo.png">
         TOPUPBD
     </div>
 
@@ -171,7 +174,6 @@ body{
 <div class="section-title">📦 My Order History</div>
 
 <div id="orderList"></div>
-
 
 <!-- BOTTOM NAV -->
 <div class="bottom-nav">
@@ -204,6 +206,17 @@ const auth = firebase.auth();
 
 function go(p){ window.location.href = p; }
 
+/* 🔥 Loading control variables */
+let walletLoaded = false;
+let ordersLoaded = false;
+
+/* Hide Loading When All Done */
+function checkLoadingDone(){
+    if(walletLoaded && ordersLoaded){
+        document.getElementById("loadingOverlay").style.display = "none";
+    }
+}
+
 /* LOAD USER */
 auth.onAuthStateChanged(user=>{
     if(!user){
@@ -212,42 +225,54 @@ auth.onAuthStateChanged(user=>{
         return;
     }
 
-    // FIXED: Firebase photoURL না থাকলে profile.png দেখাবে
-    const userPhoto = document.getElementById("userPhoto");
-    userPhoto.src = (user.photoURL && user.photoURL !== "") 
-                    ? user.photoURL 
-                    : "profile.png";
+    document.getElementById("userPhoto").src =
+        user.photoURL ? user.photoURL : "profile.png";
 
-    // Load wallet
     db.ref("wallet/" + user.uid).on("value", snap=>{
-        let d = snap.val() || {};
-        document.getElementById("walletBalance").innerText = (d.dollar || 0) + "৳";
+        document.getElementById("walletBalance").innerText =
+            (snap.val()?.dollar || 0) + "৳";
+
+        walletLoaded = true;
+        checkLoadingDone();
     });
 
     loadOrders(user.uid);
 });
 
-/* LOAD ORDERS */
+/* LOAD USER ORDERS */
 function loadOrders(uid){
-    db.ref("orders").orderByChild("uid").equalTo(uid).on("value", snap=>{
+    db.ref("users/" + uid + "/orderHistory").on("value", snap=>{
         
         const box = document.getElementById("orderList");
         box.innerHTML = "";
 
+        if(!snap.exists()){
+            box.innerHTML = "<h3 style='text-align:center;color:#777;'>No Orders Found</h3>";
+            ordersLoaded = true;
+            checkLoadingDone();
+            return;
+        }
+
+        let orders = [];
         snap.forEach(s=>{
-            let o = s.val();
+            orders.push(s.val());
+        });
+
+        orders.reverse();
+
+        orders.forEach(o=>{
             let time = new Date(o.time).toLocaleString();
 
             let statusClass =
                 o.status === "Success" ? "success" :
-                o.status === "Cancel" ? "cancel" : "pending";
+                o.status === "Cancelled" ? "cancel" : "pending";
 
             let div = document.createElement("div");
             div.className = "order-card";
 
             div.innerHTML = `
                 <h3>💎 ${o.package.diamonds} – ${o.price}৳</h3>
-                <p><b>UID:</b> ${o.playerId}</p>
+                <p><b>Player ID:</b> ${o.playerId}</p>
                 <p><b>Payment:</b> ${o.payMethod}</p>
                 <p><b>Time:</b> ${time}</p>
                 <span class="status ${statusClass}">
@@ -256,6 +281,9 @@ function loadOrders(uid){
             `;
             box.appendChild(div);
         });
+
+        ordersLoaded = true;
+        checkLoadingDone();
     });
 }
 </script>

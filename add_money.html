@@ -17,6 +17,24 @@ body{
     min-height:100vh;
 }
 
+/* ======= FULL SCREEN LOADING OVERLAY ======= */
+#loadingOverlay{
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    backdrop-filter:blur(6px);
+    background:rgba(255,255,255,0.6);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    font-size:20px;
+    font-weight:700;
+    color:#1e90ff;
+    z-index:99999;
+}
+
 /* HEADER */
 .header{
     padding:12px 15px;
@@ -43,7 +61,6 @@ body{
     height:42px;
 }
 
-/* MAIN ADD MONEY CARD */
 .container{
     max-width:480px;
     margin:auto;
@@ -135,15 +152,55 @@ input{
     font-weight:700;
     cursor:pointer;
 }
+
+/* === CUSTOM POPUP === */
+#customPopup{
+    position: fixed;
+    top:50%;
+    left:50%;
+    transform: translate(-50%, -50%) scale(0.8);
+    background:white;
+    padding:22px 25px;
+    border-radius:16px;
+    box-shadow:0 8px 25px rgba(0,0,0,0.25);
+    width:260px;
+    text-align:center;
+    font-size:16px;
+    font-weight:600;
+    z-index:9999;
+    opacity:0;
+    display:none;
+    transition:0.3s ease-in-out;
+}
+#popupBtn{
+    margin-top:14px;
+    background:#1e90ff;
+    color:white;
+    border:none;
+    padding:10px 18px;
+    border-radius:10px;
+    font-size:15px;
+    cursor:pointer;
+    font-weight:700;
+}
 </style>
 </head>
 
 <body>
 
+<!-- FULL SCREEN LOADING -->
+<div id="loadingOverlay">⏳ Please Wait... Loading...</div>
+
+<!-- CUSTOM POPUP -->
+<div id="customPopup">
+    <p id="popupMessage"></p>
+    <button id="popupBtn" onclick="closePopup()">OK</button>
+</div>
+
 <!-- HEADER -->
 <div class="header">
     <div class="logo" onclick="openHome()">
-        <img src="https://i.ibb.co.com/fGt7pS45/Picsart-25-09-30-23-06-37-837.webp">
+        <img src="logo.png">
         <span>TOPUP BD</span>
     </div>
 </div>
@@ -209,24 +266,52 @@ const db = firebase.firestore();
 const rtdb = firebase.database();
 const auth = firebase.auth();
 
-// PAGE NAV
+/* ====== PAGE LOADING CONTROL ====== */
+function showLoading(text="Please Wait...") {
+    let overlay=document.getElementById("loadingOverlay");
+    overlay.style.display="flex";
+    overlay.innerHTML="⏳ "+text;
+}
+function hideLoading(){
+    document.getElementById("loadingOverlay").style.display="none";
+}
+
+/* ===== POPUP ===== */
+function showPopup(msg){
+    let box = document.getElementById("customPopup");
+    document.getElementById("popupMessage").innerText = msg;
+    box.style.display = "block";
+    setTimeout(()=>{
+        box.style.opacity = "1";
+        box.style.transform = "translate(-50%, -50%) scale(1)";
+    }, 10);
+}
+function closePopup(){
+    let box = document.getElementById("customPopup");
+    box.style.opacity = "0";
+    box.style.transform = "translate(-50%, -50%) scale(0.8)";
+    setTimeout(()=>{ box.style.display = "none"; }, 250);
+}
+
+/* NAVIGATION */
 function openHome(){ location.href="index.html"; }
 function openAddMoney(){ location.href="add_money.html"; }
 function openOrders(){ location.href="orders.html"; }
 function openCodes(){ location.href="lottery.html"; }
 function openProfile(){ location.href="profile.html"; }
 
-// LOGIN CHECK
+/* LOGIN CHECK */
 auth.onAuthStateChanged(user=>{
     if(!user){
-        alert("Please Login First!");
-        window.location.href = "login.html";
+        showPopup("Please Login First!");
+        setTimeout(()=>{ window.location.href="login.html"; },1500);
     } else {
         loadWallet(user.uid);
+        loadNumbers();
     }
 });
 
-// Load Wallet
+/* LOAD WALLET */
 function loadWallet(uid){
     rtdb.ref("wallet/"+uid+"/dollar").on("value",snap=>{
         document.getElementById("myDeposit").innerText =
@@ -234,19 +319,21 @@ function loadWallet(uid){
     });
 }
 
-// PAYMENT METHOD
+/* PAYMENT METHOD */
 let method = "bkash";
 let numbers = { bkash:null, nagad:null };
 
-// Load Numbers
-db.collection("paymentNumbers").doc("bkash").onSnapshot(d=>{
-    numbers.bkash = d.exists ? d.data().number : null;
-    if(method==="bkash") showNumber();
-});
-db.collection("paymentNumbers").doc("nagad").onSnapshot(d=>{
-    numbers.nagad = d.exists ? d.data().number : null;
-    if(method==="nagad") showNumber();
-});
+function loadNumbers(){
+    db.collection("paymentNumbers").doc("bkash").onSnapshot(d=>{
+        numbers.bkash = d.exists ? d.data().number : null;
+        if(method==="bkash") showNumber();
+        hideLoading(); // loading done
+    });
+    db.collection("paymentNumbers").doc("nagad").onSnapshot(d=>{
+        numbers.nagad = d.exists ? d.data().number : null;
+        if(method==="nagad") showNumber();
+    });
+}
 
 function setMethod(m){
     method = m;
@@ -264,43 +351,49 @@ function showNumber(){
         return;
     }
     inp.value = numbers[method];
-    inp.placeholder = "";
 }
 
 function copyNumber(){
     let val = document.getElementById("payNumber").value;
-    if(!val) return alert("Number Not Found");
+    if(!val) return showPopup("Number Not Found");
     navigator.clipboard.writeText(val);
-    alert("Copied!");
+    showPopup("Copied!");
 }
 
+/* SUBMIT PAYMENT */
 function submitPayment(){
     let amount = Number(document.getElementById("amount").value);
     let phone = document.getElementById("userPhone").value.trim();
     let txid = document.getElementById("txid").value.trim();
 
-    if(amount < 10) return alert("Minimum 10 TK");
-    if(phone.length < 10) return alert("Valid Mobile Number দিন");
-    if(!txid) return alert("Transaction ID দিন");
-    if(!numbers[method]) return alert("Payment number missing");
+    if(amount < 10) return showPopup("Minimum 10 TK");
+    if(phone.length < 10) return showPopup("Valid Mobile Number দিন");
+    if(!txid) return showPopup("Transaction ID দিন");
+    if(!numbers[method]) return showPopup("Payment number missing");
 
     const user = auth.currentUser;
-    if(!user) return alert("Login first");
+    if(!user) return showPopup("Login first");
 
-    db.collection("addMoney").add({
-        uid: user.uid,
-        amount,
-        method,
-        number: numbers[method],
-        userPhone: phone,
-        txid,
-        status: "pending",
-        time: firebase.firestore.FieldValue.serverTimestamp()
-    }).then(()=>{
-        alert("Request Submitted!");
-        location.href="index.html";
-    });
+    showLoading("Submitting... Please Wait...");
+
+    setTimeout(()=>{   // 3 seconds waiting
+        db.collection("addMoney").add({
+            uid: user.uid,
+            amount,
+            method,
+            number: numbers[method],
+            userPhone: phone,
+            txid,
+            status: "pending",
+            time: firebase.firestore.FieldValue.serverTimestamp()
+        }).then(()=>{
+            hideLoading();
+            showPopup("Request Submitted!");
+            setTimeout(()=>{ location.href="index.html"; },1500);
+        });
+    }, 3000);
 }
+
 </script>
 
 </body>

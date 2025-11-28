@@ -20,7 +20,7 @@ body{
     min-height:100vh;
 }
 
-/* TOP HEADER */
+/* Header */
 .header{
     padding:15px;
     background:rgba(30,144,255,0.85);
@@ -28,11 +28,10 @@ body{
     font-size:20px;
     font-weight:700;
     text-align:center;
-    backdrop-filter:blur(7px);
     box-shadow:0 4px 20px rgba(0,0,0,0.25);
 }
 
-/* Center Wrapper */
+/* Main wrapper */
 .wrapper{
     display:flex;
     justify-content:center;
@@ -41,7 +40,7 @@ body{
     padding:20px;
 }
 
-/* Login Box */
+/* Main container */
 .container{
     width:100%;
     max-width:380px;
@@ -72,9 +71,7 @@ input{
     border-radius:12px;
     background:#f1f4ff;
     font-size:15px;
-    outline:none;
     border:2px solid transparent;
-    transition:0.3s;
 }
 
 input:focus{
@@ -91,29 +88,61 @@ button{
     font-size:17px;
     font-weight:700;
     cursor:pointer;
-    transition:0.3s;
     margin-top:5px;
 }
 
-button:hover{
-    background:#3ea5ff;
-    box-shadow:0 4px 12px rgba(0,0,50,0.25);
+.google-btn{
+    width:100%;
+    padding:12px;
+    background:white;
+    color:black;
+    border:none;
+    border-radius:14px;
+    font-weight:600;
+    font-size:16px;
+    cursor:pointer;
+    box-shadow:0 3px 8px rgba(0,0,0,0.15);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    gap:10px;
+    margin-top:15px;
 }
 
 .link{
     text-align:center;
-    margin-top:12px;
+    margin-top:15px;
     color:#1e90ff;
     font-weight:600;
     cursor:pointer;
+}
+
+/* Popup alert */
+#alertBox{
+    position: fixed;
+    top:0; left:0;
+    width:100%; height:100%;
+    background:rgba(0,0,0,0.45);
+    display:none;
+    justify-content:center;
+    align-items:center;
+    z-index:9999;
+}
+#alertContent{
+    background:white;
+    padding:25px;
+    width:80%;
+    max-width:330px;
+    text-align:center;
+    border-radius:18px;
+    box-shadow:0 4px 20px rgba(0,0,0,0.25);
 }
 </style>
 </head>
 
 <body>
 
-<!-- HEADER -->
-<div class="header">TOPUP BD – Login</div>
+<div class="header">EASY TOP UP – Login</div>
 
 <div class="wrapper">
 
@@ -125,6 +154,14 @@ button:hover{
     <input type="password" id="loginPass" placeholder="Password">
 
     <button onclick="loginUser()">Login</button>
+
+    <div class="link" onclick="location.href='forgot.html'">Forgot Password?</div>
+
+    <button class="google-btn" onclick="googleLogin()">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" 
+        style="width:22px;height:22px;">
+        Continue with Google
+    </button>
 
     <div class="link" onclick="openRegister()">Create New Account</div>
 </div>
@@ -140,12 +177,42 @@ button:hover{
 
     <button onclick="registerUser()">Register</button>
 
+    <button class="google-btn" onclick="googleLogin()">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" 
+        style="width:22px;height:22px;">
+        Continue with Google
+    </button>
+
     <div class="link" onclick="openLogin()">Already have an account?</div>
 </div>
+</div>
 
+<!-- ALERT POPUP -->
+<div id="alertBox">
+    <div id="alertContent">
+        <h3 id="alertMsg"></h3>
+        <button onclick="closeAlert()" style="
+            padding:10px 20px;
+            background:#1e90ff;
+            border:none;
+            color:white;
+            border-radius:10px;
+            font-weight:600;">
+            OK
+        </button>
+    </div>
 </div>
 
 <script>
+// Alert Popup
+function showAlert(msg){
+    alertMsg.innerText = msg;
+    alertBox.style.display = "flex";
+}
+function closeAlert(){
+    alertBox.style.display = "none";
+}
+
 // Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyBl0PIm4lvZea96Bte3KaKQJvurGE1P8Es",
@@ -159,39 +226,26 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 
-// PAGE TOGGLE
-function openRegister(){
-    loginPage.style.display="none";
-    registerPage.style.display="block";
-}
+// Switch Page
+function openRegister(){ loginPage.style.display="none"; registerPage.style.display="block"; }
+function openLogin(){ registerPage.style.display="none"; loginPage.style.display="block"; }
 
-function openLogin(){
-    registerPage.style.display="none";
-    loginPage.style.display="block";
-}
-
-// REGISTER USER
+// Register User
 function registerUser(){
     let name = regName.value;
     let email = regEmail.value;
     let phone = regPhone.value;
     let pass = regPass.value;
 
-    if(name=="" || email=="" || phone=="" || pass=="")
-        return alert("All fields required!");
+    if(!name || !email || !phone || !pass)
+        return showAlert("All fields required!");
 
     firebase.auth().createUserWithEmailAndPassword(email, pass)
-    .then(res => {
+    .then(res=>{
         let uid = res.user.uid;
 
-        res.user.updateProfile({ displayName: name });
-
         firebase.database().ref("users/"+uid).set({
-            name:name,
-            email:email,
-            phone:phone,
-            uid:uid,
-            balance:0
+            name, email, phone, uid, balance:0
         });
 
         firebase.database().ref("wallet/"+uid).set({
@@ -199,28 +253,100 @@ function registerUser(){
             pin:"------"
         });
 
-        alert("Registration Successful!");
-        location.href="index.html";
+        showAlert("Registration Successful!");
+        setTimeout(()=>location.href="index.html",1000);
     })
-    .catch(err => alert(err.message));
+    .catch(e=>{
+        if(e.code === "auth/network-request-failed")
+            return showAlert("Please check your internet connection!");
+
+        if(e.code === "auth/email-already-in-use")
+            return showAlert("This email is already registered!");
+
+        if(e.code === "auth/invalid-email")
+            return showAlert("Invalid email address!");
+
+        showAlert(e.message);
+    });
 }
 
-// LOGIN USER
+// Login
 function loginUser(){
     let email = loginEmail.value;
     let pass = loginPass.value;
 
-    if(email=="" || pass=="")
-        return alert("Enter email & password!");
+    if(!email || !pass)
+        return showAlert("Enter email & password!");
 
     firebase.auth().signInWithEmailAndPassword(email, pass)
     .then(res=>{
         localStorage.setItem("uid", res.user.uid);
-        alert("Login Successful!");
-        location.href="index.html";
+        showAlert("Login Successful!");
+        setTimeout(()=>location.href="index.html",1000);
     })
-    .catch(err=>alert(err.message));
+    .catch(e=>{
+
+        // FIXED: NEW firebase error code
+        if(
+            e.code === "auth/user-not-found" ||
+            e.code === "auth/wrong-password" ||
+            e.code === "auth/invalid-login-credentials"
+        ){
+            return showAlert("Please check your email or password!");
+        }
+
+        if(e.code === "auth/invalid-email")
+            return showAlert("Invalid email format!");
+
+        if(e.code === "auth/network-request-failed")
+            return showAlert("Please check your internet connection!");
+
+        showAlert(e.message);
+    });
 }
+
+// Google Login
+function googleLogin(){
+    let provider = new firebase.auth.GoogleAuthProvider();
+    firebase.auth().signInWithRedirect(provider);
+}
+
+// Google Redirect Result
+firebase.auth().getRedirectResult()
+.then(result=>{
+    if(result.user){
+        let user = result.user;
+
+        firebase.database().ref("users/"+user.uid).once("value", snap=>{
+            if(!snap.exists()){
+                firebase.database().ref("users/"+user.uid).set({
+                    name:user.displayName,
+                    email:user.email,
+                    phone:user.phoneNumber || "Not Added",
+                    uid:user.uid,
+                    balance:0
+                });
+
+                firebase.database().ref("wallet/"+user.uid).set({
+                    dollar:0,
+                    pin:"------"
+                });
+            }
+        });
+
+        localStorage.setItem("uid", user.uid);
+        showAlert("Google Login Successful!");
+        setTimeout(()=>location.href="index.html",1000);
+    }
+})
+.catch(err=>{
+    if(err.message.includes("no redirect")) return;
+
+    if(err.code === "auth/network-request-failed")
+        return showAlert("Please check your internet connection!");
+
+    showAlert(err.message);
+});
 </script>
 
 </body>

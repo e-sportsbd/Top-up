@@ -16,6 +16,28 @@ body{
     padding-bottom:160px;
 }
 
+/* MAIN CONTENT WRAPPER — BLUR WILL APPLY HERE */
+#mainContent.blur{
+    filter:blur(6px);
+    pointer-events:none;
+    user-select:none;
+}
+
+/* FULL SCREEN LOADING POPUP */
+#loadingScreen{
+    position:fixed;
+    inset:0;
+    backdrop-filter:blur(10px);
+    background:rgba(0,0,0,0.35);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    z-index:99999;
+    font-size:24px;
+    font-weight:800;
+    color:white;
+}
+
 /* HEADER */
 .header{
     padding:12px 18px;
@@ -43,7 +65,7 @@ body{
     box-shadow:0 2px 10px rgba(0,0,0,0.25);
 }
 
-/* LOGIN */
+/* LOGIN BUTTON */
 .login-btn{
     background:white;
     padding:7px 16px;
@@ -54,7 +76,7 @@ body{
     box-shadow:0 2px 10px rgba(0,0,0,0.25);
 }
 
-/* PROFILE */
+/* PROFILE IMAGE */
 .profile-img{
     width:45px;
     height:45px;
@@ -99,7 +121,7 @@ body{
     background:rgba(30,144,255,0.15);
 }
 
-/* INPUT */
+/* INPUT BOX */
 .input-box{
     width:100%;
     padding:17px;
@@ -114,7 +136,7 @@ body{
     box-shadow:0 0 12px rgba(30,144,255,0.35);
 }
 
-/* PAYMENT */
+/* PAYMENT BOX */
 .paybox{
     flex:1;
     background:rgba(255,255,255,0.7);
@@ -146,7 +168,7 @@ body{
     box-shadow:0 4px 15px rgba(0,0,0,0.25);
 }
 
-/* HELP */
+/* HELP BUTTON */
 .call-btn{
     position:fixed;
     right:15px;
@@ -163,15 +185,41 @@ body{
     font-size:16px;
     box-shadow:0 4px 15px rgba(0,0,0,0.25);
 }
+
+/* ALERT POPUP */
+#alertBox{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.45);
+    display:none;
+    justify-content:center;
+    align-items:center;
+    backdrop-filter:blur(3px);
+    z-index:99999;
+}
+#alertInner{
+    background:white;
+    width:80%;
+    max-width:320px;
+    padding:25px 20px;
+    border-radius:18px;
+    text-align:center;
+    font-family:'Poppins';
+    box-shadow:0 6px 25px rgba(0,0,0,0.25);
+}
 </style>
 </head>
-
 <body>
 
-<!-- HEADER -->
+<!-- FULL SCREEN LOADER -->
+<div id="loadingScreen">⏳ Please wait… Loading...</div>
+
+<!-- MAIN CONTENT START -->
+<div id="mainContent">
+  <!-- HEADER -->
 <div class="header">
     <div class="logo">
-        <img src="https://i.ibb.co.com/fGt7pS45/Picsart-25-09-30-23-06-37-837.webp">
+        <img src="logo.png">
         EASY TOPUP
     </div>
 
@@ -191,13 +239,13 @@ body{
     <div id="packageList" class="pack-grid"></div>
 </div>
 
-<!-- UID -->
+<!-- UID INPUT -->
 <div class="section">
     <div class="section-title">২) Account Info</div>
     <input id="playerId" type="number" class="input-box" placeholder="আপনার Free Fire UID লিখুন">
 </div>
 
-<!-- PAYMENT -->
+<!-- PAYMENT SECTION -->
 <div class="section">
     <div class="section-title">৩) Select Payment</div>
 
@@ -211,6 +259,23 @@ body{
 
 <div class="call-btn" onclick="go('support.html')">Help</div>
 
+</div> <!-- MAIN CONTENT END -->
+
+<!-- CUSTOM ALERT POPUP -->
+<div id="alertBox">
+    <div id="alertInner">
+        <div id="alertMsg" style="font-size:17px;font-weight:600;color:#333;margin-bottom:18px;">Message</div>
+        <button onclick="closeAlert()" style="
+            padding:10px 25px;
+            border:none;
+            background:#1e90ff;
+            color:white;
+            border-radius:12px;
+            font-size:15px;
+            font-weight:700;
+            cursor:pointer;">OK</button>
+    </div>
+</div>
 
 <!-- FIREBASE -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -221,6 +286,16 @@ body{
 
 function go(p){ location.href = p; }
 
+/*** ALERT POPUP ***/
+function showAlert(msg){
+    document.getElementById("alertMsg").innerText = msg;
+    document.getElementById("alertBox").style.display = "flex";
+}
+function closeAlert(){
+    document.getElementById("alertBox").style.display = "none";
+}
+
+/*** FIREBASE CONFIG ***/
 const firebaseConfig = {
   apiKey: "AIzaSyBl0PIm4lvZea96Bte3KaKQJvurGE1P8Es",
   authDomain: "post-c7e41.firebaseapp.com",
@@ -234,23 +309,33 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 
-/* LOGIN */
+/*** PAGE LOAD — APPLY BLUR BEFORE LOADING DONE ***/
+const mainContent = document.getElementById("mainContent");
+mainContent.classList.add("blur");
+
+let loadAuth = false;
+let loadProducts = false;
+
+/*** AUTH CHECK ***/
 auth.onAuthStateChanged(user=>{
+    loadAuth = true;
+
     if(user){
         loginButton.style.display="none";
         balanceBox.style.display="flex";
         userPhoto.style.display="block";
         userPhoto.src = user.photoURL || "profile.png";
-
         loadWallet(user.uid);
     } else {
         loginButton.style.display="block";
         balanceBox.style.display="none";
         userPhoto.style.display="none";
     }
+
+    hideFullLoader();
 });
 
-/* LOAD WALLET */
+/*** WALLET LOAD ***/
 let currentWallet = 0;
 function loadWallet(uid){
     db.ref("wallet/"+uid).on("value",snap=>{
@@ -260,9 +345,8 @@ function loadWallet(uid){
     });
 }
 
-/* LOAD TOPUP PACKAGES */
-const category = "topup";  
-
+/*** LOAD PRODUCTS ***/
+const category = "topup";
 db.ref("products/" + category).on("value", snap=>{
     const box = document.getElementById("packageList");
     box.innerHTML = "";
@@ -282,9 +366,20 @@ db.ref("products/" + category).on("value", snap=>{
         div.addEventListener("click", ()=>selectPackage(div,p.key,pkg));
         box.appendChild(div);
     });
+
+    loadProducts = true;
+    hideFullLoader();
 });
 
-/* SELECT PACKAGE */
+/*** REMOVE LOADING & REMOVE BLUR WHEN DONE ***/
+function hideFullLoader(){
+    if(loadAuth && loadProducts){
+        document.getElementById("loadingScreen").style.display = "none";
+        mainContent.classList.remove("blur");
+    }
+}
+
+/*** PACKAGE SELECT ***/
 let selectedDiv = null;
 let selectedPackage = null;
 
@@ -292,11 +387,10 @@ function selectPackage(div,key,data){
     if(selectedDiv) selectedDiv.classList.remove("active");
     div.classList.add("active");
     selectedDiv = div;
-
     selectedPackage = { key, ...data };
 }
 
-/* PAYMENT */
+/*** PAYMENT METHOD ***/
 let payMethod = null;
 
 function selectMethod(type){
@@ -305,22 +399,24 @@ function selectMethod(type){
     document.getElementById(type==="wallet" ? "walletBox" : "autoBox").classList.add("active");
 }
 
-/* BUY */
+/*** BUY NOW SYSTEM ***/
 function buyNow(){
-    let user = auth.currentUser;
-    if(!user) return alert("Login First!");
 
-    if(!selectedPackage) return alert("Package Select করুন");
+    let user = auth.currentUser;
+    if(!user) return showAlert("Login First!");
+
+    if(!selectedPackage) return showAlert("Package Select করুন");
 
     let id = String(playerId.value).trim();
-    if(id.length < 3) return alert("সঠিক UID লিখুন");
+    if(id.length < 3) return showAlert("সঠিক UID লিখুন");
 
-    if(!payMethod) return alert("Pay method Select করুন");
+    if(!payMethod) return showAlert("Pay method Select করুন");
 
     let price = selectedPackage.price;
 
     if(payMethod==="wallet"){
-        if(currentWallet < price) return alert("Wallet এ পর্যাপ্ত টাকা নেই!");
+        if(currentWallet < price) return showAlert("Wallet এ পর্যাপ্ত টাকা নেই!");
+
         db.ref("wallet/"+user.uid).update({
             dollar: currentWallet - price
         });
@@ -339,8 +435,19 @@ function buyNow(){
 
     db.ref("orders").push(order);
 
-    alert("Order Submitted!");
-    go("index.html");
+    /** PROCESSING LOADER **/
+    document.getElementById("loadingScreen").innerText = "⏳ Please wait… Processing...";
+    document.getElementById("loadingScreen").style.display = "flex";
+    mainContent.classList.add("blur");
+
+    setTimeout(()=>{
+        document.getElementById("loadingScreen").innerText = "✅ Order Submitted!";
+
+        setTimeout(()=>{
+            location.reload();
+        },1200);
+
+    },3000);
 }
 
 </script>

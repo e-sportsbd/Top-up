@@ -73,7 +73,7 @@ body{
     color:#082857;
 }
 
-/* PACKAGES */
+/* PACKAGE LIST */
 .pack-grid{
     display:grid;
     grid-template-columns:1fr 1fr;
@@ -190,15 +190,78 @@ body{
     font-size:13px;
     cursor:pointer;
 }
+
+/* ALERT */
+#alertOverlay{
+    position:fixed;
+    left:0; top:0;
+    width:100%; height:100%;
+    background:rgba(0,0,0,.5);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:10000;
+}
+.alert-box{
+    background:white;
+    padding:25px;
+    border-radius:20px;
+    width:80%;
+    max-width:350px;
+    text-align:center;
+    box-shadow:0 4px 20px rgba(0,0,0,0.3);
+}
+.alert-btn{
+    margin-top:15px;
+    padding:10px 25px;
+    background:#1e90ff;
+    color:white;
+    border-radius:12px;
+    font-weight:700;
+    cursor:pointer;
+}
+
+/* FULL BLUR LOADING */
+#fullBlurLoad{
+    position:fixed;
+    top:0;left:0;
+    width:100%;height:100%;
+    backdrop-filter:blur(8px);
+    background:rgba(255,255,255,0.6);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    z-index:9999;
+    font-size:22px;
+    font-weight:700;
+    color:#1e90ff;
+}
+#blurText{
+    font-size:22px;
+    font-weight:700;
+    color:#1e90ff;
+}
 </style>
 </head>
-
 <body>
+
+<!-- FULL SCREEN LOADING -->
+<div id="fullBlurLoad">
+    <div id="blurText">Loading...</div>
+</div>
+
+<!-- ALERT POPUP -->
+<div id="alertOverlay">
+    <div class="alert-box">
+        <h3 id="alertMsg">Message</h3>
+        <div class="alert-btn" onclick="closeAlert()">OK</div>
+    </div>
+</div>
 
 <!-- HEADER -->
 <div class="header">
     <div class="logo">
-        <img src="https://i.ibb.co.com/fGt7pS45/Picsart-25-09-30-23-06-37-837.webp">
+        <img src="logo.png">
         EASY TOPUP
     </div>
 
@@ -214,17 +277,17 @@ body{
 
 <!-- PACKAGES -->
 <div class="section">
-    <div class="section-title">১)Unipin Voucher</div>
+    <div class="section-title">১) Unipin Voucher</div>
     <div id="packageList" class="pack-grid"></div>
 </div>
 
-<!-- UID -->
+<!-- UID BOX -->
 <div class="section">
     <div class="section-title">২) Account Info</div>
     <input id="playerId" type="number" class="input-box" placeholder="Free Fire UID লিখুন">
 </div>
 
-<!-- PAYMENT -->
+<!-- PAYMENT METHOD -->
 <div class="section">
     <div class="section-title">৩) Select Payment</div>
 
@@ -258,32 +321,59 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 
+/* GO FUNCTION */
 function go(p){ location.href = p; }
 
-/* LOGIN CHECK */
+/* ALERT FUNCTIONS */
+function showAlert(msg){
+    alertMsg.innerText = msg;
+    alertOverlay.style.display = "flex";
+}
+function closeAlert(){
+    alertOverlay.style.display = "none";
+}
+
+/* FULL SCREEN LOADING */
+function showFullLoading(t){
+    blurText.innerText = t;
+    fullBlurLoad.style.display = "flex";
+}
+function hideFullLoading(){
+    fullBlurLoad.style.display = "none";
+}
+
+/* PAGE BLUR START */
+showFullLoading("Please wait... Loading...");
+
+/* USER LOGIN LOAD */
 auth.onAuthStateChanged(user=>{
-    if(user){
-        loginButton.style.display="none";
-        balanceBox.style.display="flex";
-        userPhoto.style.display="block";
-        userPhoto.src = user.photoURL || "profile.png";
-        loadWallet(user.uid);
+    if(!user){
+        hideFullLoading();
+        return;
     }
+
+    loginButton.style.display="none";
+    balanceBox.style.display="flex";
+    userPhoto.style.display="block";
+
+    userPhoto.src = user.photoURL || "profile.png";
+
+    loadWallet(user.uid);
 });
 
-/* LOAD WALLET */
+/* WALLET LOAD */
 let currentWallet = 0;
 function loadWallet(uid){
-    db.ref("wallet/"+uid).on("value",snap=>{
+    db.ref("wallet/"+uid).on("value", snap=>{
         let d = snap.val() || {};
         currentWallet = d.dollar || 0;
         walletBalance.innerText = currentWallet + "৳";
     });
 }
 
-/* LOAD PACKAGES */
+/* PACKAGE LOAD */
 db.ref("products/unipin").on("value", snap=>{
-    const box = document.getElementById("packageList");
+    let box = document.getElementById("packageList");
     box.innerHTML = "";
 
     snap.forEach(p=>{
@@ -300,60 +390,90 @@ db.ref("products/unipin").on("value", snap=>{
         `;
 
         div.addEventListener("click", ()=>selectPackage(div,p.key,pkg));
+
         box.appendChild(div);
     });
+
+    hideFullLoading(); // DATA LOADED → REMOVE BLUR
 });
 
-/* SELECT PACKAGE */
+/* PACKAGE SELECT */
 let selectedPackage = null;
 let selectedDiv = null;
 
 function selectPackage(div,key,pkg){
     if(selectedDiv) selectedDiv.classList.remove("active");
+
     div.classList.add("active");
     selectedDiv = div;
     selectedPackage = { key, ...pkg };
 }
 
-/* PAYMENT */
+/* PAYMENT SELECT */
 let payMethod = null;
+
 function selectMethod(type){
     payMethod = type;
-    document.querySelectorAll(".paybox").forEach(x=>x.classList.remove("active"));
+
+    document.querySelectorAll(".paybox").forEach(e=>e.classList.remove("active"));
     document.getElementById(type==="wallet" ? "walletBox" : "autoBox").classList.add("active");
 }
 
 /* BUY NOW */
 function buyNow(){
     let user = auth.currentUser;
-    if(!user) return alert("Login First!");
-    if(!selectedPackage) return alert("Package Select করুন");
 
-    let id = playerId.value;
-    if(id.length < 3) return alert("UID ঠিকভাবে লিখুন");
+    if(!user) return showAlert("Login First!");
+    if(!selectedPackage) return showAlert("Package Select করুন");
 
-    if(!payMethod) return alert("Payment Select করুন");
+    let id = playerId.value.trim();
+    if(id.length < 8) return showAlert("UID ঠিকভাবে লিখুন");
+
+    if(!payMethod) return showAlert("Payment Select করুন");
 
     let price = selectedPackage.price;
 
-    if(payMethod==="wallet"){
-        if(currentWallet < price) return alert("Wallet এ টাকা নেই!");
-        db.ref("wallet/"+user.uid).update({ dollar: currentWallet - price });
+    if(payMethod==="wallet" && currentWallet < price){
+        return showAlert("Wallet এ পর্যাপ্ত Balance নেই!");
     }
 
-    let order = {
-        uid:user.uid,
-        playerId:id,
-        package:selectedPackage,
-        price:price,
-        payMethod:payMethod,
-        status:"Pending",
-        time:Date.now()
-    };
+    /* SHOW LOADING */
+    showFullLoading("Processing Order...");
 
-    db.ref("orders").push(order);
+    setTimeout(()=>{
 
-    alert("Order Submitted!");
+        /* DEDUCT WALLET */
+        if(payMethod==="wallet"){
+            db.ref("wallet/"+user.uid).update({
+                dollar: currentWallet - price
+            });
+        }
+
+        /* ORDER DATA */
+        let orderData = {
+            uid:user.uid,
+            playerId:id,
+            package:selectedPackage,
+            price:price,
+            payMethod:payMethod,
+            status:"Pending",
+            createdAt:Date.now()
+        };
+
+        db.ref("orders").push(orderData);
+
+        /* SUCCESS */
+        showFullLoading("Order Submitted!");
+
+        setTimeout(()=>{
+            hideFullLoading();
+            showAlert("Order Submitted Successfully!");
+
+            setTimeout(()=>location.reload(),1200);
+
+        },1000);
+
+    },3000); // 3 SECOND LOADING
 }
 </script>
 

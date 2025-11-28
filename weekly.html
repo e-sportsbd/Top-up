@@ -16,7 +16,7 @@ body{
     padding-bottom:160px;
 }
 
-/* HEADER */
+/* Header */
 .header{
     padding:12px 18px;
     display:flex;
@@ -56,7 +56,6 @@ body{
     cursor:pointer;
     box-shadow:0 2px 10px rgba(0,0,0,0.25);
 }
-
 .profile-img{
     width:45px;
     height:45px;
@@ -64,7 +63,7 @@ body{
     border:2px solid white;
 }
 
-/* SECTION */
+/* Sections */
 .section{
     background:rgba(255,255,255,0.55);
     margin:18px;
@@ -79,7 +78,7 @@ body{
     color:#082857;
 }
 
-/* PACKAGE GRID */
+/* Packages */
 .pack-grid{
     display:grid;
     grid-template-columns:1fr 1fr;
@@ -100,25 +99,8 @@ body{
     border:2px solid #1e90ff;
     background:rgba(30,144,255,0.15);
 }
-.pack .title{
-    font-size:18px;
-    font-weight:700;
-    color:#082857;
-}
-.pack .diamond{
-    font-size:16px;
-    color:#ff5050;
-    margin:6px 0;
-    font-weight:600;
-}
-.pack .price{
-    font-size:18px;
-    font-weight:700;
-    color:#1e90ff;
-    margin-top:6px;
-}
 
-/* INPUT */
+/* Input */
 .input-box{
     width:100%;
     padding:17px;
@@ -133,7 +115,7 @@ body{
     box-shadow:0 0 12px rgba(30,144,255,0.35);
 }
 
-/* PAYMENT */
+/* Payments */
 .paybox{
     flex:1;
     background:rgba(255,255,255,0.7);
@@ -150,6 +132,7 @@ body{
     background:rgba(30,144,255,0.20);
 }
 
+/* Buy Button */
 .buy-btn{
     width:100%;
     padding:18px;
@@ -164,7 +147,7 @@ body{
     box-shadow:0 4px 15px rgba(0,0,0,0.25);
 }
 
-/* HELP BUTTON */
+/* Help */
 .call-btn{
     position:fixed;
     right:15px;
@@ -181,33 +164,86 @@ body{
     font-size:16px;
 }
 
-/* NAV */
-.bottom-nav{
+/* Popup */
+.popup-bg{
     position:fixed;
-    bottom:0;
-    left:0;
-    width:100%;
-    background:rgba(255,255,255,0.95);
-    display:flex;
-    justify-content:space-around;
-    padding:10px 0 15px;
-    font-weight:700;
-    box-shadow:0 -4px 15px rgba(0,0,0,0.2);
+    top:0; left:0;
+    width:100%; height:100%;
+    background:rgba(0,0,0,0.4);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:99999;
 }
-.bottom-nav div{
+.popup-box{
+    background:white;
+    width:75%;
+    padding:25px;
     text-align:center;
-    font-size:13px;
+    border-radius:16px;
+    box-shadow:0 4px 20px rgba(0,0,0,0.3);
+    animation:pop .25s ease-out;
+}
+.popup-btn{
+    margin-top:18px;
+    padding:10px 20px;
+    background:#1e90ff;
+    border:none;
+    color:white;
+    border-radius:8px;
+    font-weight:700;
     cursor:pointer;
+}
+@keyframes pop{
+    0%{ transform:scale(0.5); opacity:0; }
+    100%{ transform:scale(1); opacity:1; }
+}
+
+/* Blur Loader */
+#pageBlur{
+    position:fixed;
+    top:0; left:0;
+    width:100%; height:100%;
+    background:rgba(255,255,255,0.6);
+    backdrop-filter: blur(6px);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:999999;
+    font-size:22px;
+    color:#1e90ff;
+    font-weight:700;
 }
 </style>
 </head>
 
 <body>
 
+<!-- GLOBAL BLUR -->
+<div id="pageBlur">⏳ Please Wait...Loading...</div>
+
+<!-- Popup -->
+<div id="popup" class="popup-bg">
+    <div class="popup-box">
+        <div id="popupMsg" style="font-size:18px; font-weight:600; color:#082857;"></div>
+        <button class="popup-btn" onclick="closePopup()">OK</button>
+    </div>
+</div>
+
+<script>
+function showPopup(msg){
+    popupMsg.innerText = msg;
+    popup.style.display = "flex";
+}
+function closePopup(){
+    popup.style.display = "none";
+}
+</script>
+
 <!-- HEADER -->
 <div class="header">
     <div class="logo">
-        <img src="https://i.ibb.co.com/fGt7pS45/Picsart-25-09-30-23-06-37-837.webp">
+        <img src="logo.png">
         EASY TOPUP
     </div>
 
@@ -247,7 +283,7 @@ body{
 
 <div class="call-btn" onclick="go('support.html')">Help</div>
 
-<!-- FIREBASE -->
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -268,28 +304,52 @@ const db = firebase.database();
 
 function go(p){ location.href = p; }
 
-/* LOGIN */
+/* ----------------------------------------
+   AUTO BLUR REMOVE WHEN ALL DATA LOADED
+-----------------------------------------*/
+let loaded = {
+    auth:false,
+    wallet:false,
+    products:false
+};
+
+function checkLoaded(){
+    if(loaded.auth && loaded.products && loaded.wallet){
+        pageBlur.style.display = "none";
+    }
+}
+
+/* AUTH */
 auth.onAuthStateChanged(user=>{
+    loaded.auth = true;
+    checkLoaded();
+
     if(user){
         loginButton.style.display="none";
         balanceBox.style.display="flex";
         userPhoto.style.display="block";
         userPhoto.src = user.photoURL || "profile.png";
         loadWallet(user.uid);
+    } else {
+        loaded.wallet = true;
+        checkLoaded();
     }
 });
 
-/* LOAD WALLET */
+/* Wallet */
 let currentWallet = 0;
 function loadWallet(uid){
     db.ref("wallet/"+uid).on("value",snap=>{
         let d = snap.val() || {};
         currentWallet = d.dollar || 0;
         walletBalance.innerText = currentWallet + "৳";
+
+        loaded.wallet = true;
+        checkLoaded();
     });
 }
 
-/* LOAD WEEKLY PACKAGES */
+/* Weekly Packages */
 db.ref("products/weekly").on("value", snap=>{
     const box = document.getElementById("packageList");
     box.innerHTML = "";
@@ -310,9 +370,12 @@ db.ref("products/weekly").on("value", snap=>{
         div.addEventListener("click", ()=>selectPackage(div,p.key,pkg));
         box.appendChild(div);
     });
+
+    loaded.products = true;
+    checkLoaded();
 });
 
-/* SELECT PACKAGE */
+/* Select Package */
 let selectedPackage = null;
 let selectedDiv = null;
 
@@ -320,11 +383,10 @@ function selectPackage(div,key,pkg){
     if(selectedDiv) selectedDiv.classList.remove("active");
     div.classList.add("active");
     selectedDiv = div;
-
     selectedPackage = { key, ...pkg };
 }
 
-/* PAYMENT */
+/* Select Payment */
 let payMethod = null;
 function selectMethod(type){
     payMethod = type;
@@ -335,34 +397,47 @@ function selectMethod(type){
 /* BUY */
 function buyNow(){
     let user = auth.currentUser;
-    if(!user) return alert("Login First!");
-    if(!selectedPackage) return alert("Package Select করুন");
-
-    let id = playerId.value;
-    if(id.length < 3) return alert("UID ঠিকভাবে লিখুন");
-
-    if(!payMethod) return alert("Payment Select করুন");
+    if(!user) return showPopup("⚠️ Login First!");
+    if(!selectedPackage) return showPopup("⚠️ Package Select করুন");
+    if(!playerId.value || playerId.value.length < 3) return showPopup("⚠️ UID ঠিকভাবে লিখুন");
+    if(!payMethod) return showPopup("⚠️ Payment Select করুন");
 
     let price = selectedPackage.price;
 
     if(payMethod==="wallet"){
-        if(currentWallet < price) return alert("Wallet এ টাকা নেই!");
-        db.ref("wallet/"+user.uid).update({ dollar: currentWallet - price });
+        if(currentWallet < price) return showPopup("⚠️ Wallet এ টাকা নেই!");
     }
 
-    let order = {
-        uid:user.uid,
-        playerId:id,
-        package:selectedPackage,
-        price:price,
-        payMethod:payMethod,
-        status:"Pending",
-        time:Date.now()
-    };
+    /* ---- INSTANT LOADING ---- */
+    pageBlur.innerText = "⏳ Processing...";
+    requestAnimationFrame(()=>{
+        pageBlur.style.display="flex";
 
-    db.ref("orders").push(order);
+        setTimeout(()=>{
 
-    alert("Order Submitted!");
+            if(payMethod==="wallet"){
+                db.ref("wallet/"+user.uid).update({ dollar: currentWallet - price });
+            }
+
+            let order = {
+                uid:user.uid,
+                playerId:playerId.value,
+                package:selectedPackage,
+                price:price,
+                payMethod:payMethod,
+                status:"Pending",
+                time:Date.now()
+            };
+
+            db.ref("orders").push(order);
+
+            pageBlur.style.display="none";
+            showPopup("✅ Order Submitted!");
+
+            setTimeout(()=>location.reload(),1500);
+
+        },3000);
+    });
 }
 </script>
 
